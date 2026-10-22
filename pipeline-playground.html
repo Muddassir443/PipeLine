@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pipeline playground</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+:root{--bg:#f6f8fa;--card:#fff;--fg:#14213d;--mut:#5b6678;--line:#dde3ea;--acc:#0f766e;--accfg:#fff;--cat-bg:#e5e7fb;--cat-fg:#2a2f7a;--num-bg:#fcefd6;--num-fg:#6b3f06;--red-bg:#fde8e8;--red-fg:#8a1c1c;--grn-bg:#e2f4e4;--grn-fg:#1d5a2a;--one-bg:#d7f0ed;--one-fg:#0b4f49;--code-bg:#101826;--code-fg:#dbe4f0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141c;--card:#161e29;--fg:#e6ebf2;--mut:#98a3b5;--line:#2a3544;--acc:#2dd4bf;--accfg:#06302c;--cat-bg:#2b3070;--cat-fg:#d4d7fb;--num-bg:#5a3a0c;--num-fg:#fbe2b4;--red-bg:#6b1f1f;--red-fg:#fbd0d0;--grn-bg:#1f4a29;--grn-fg:#c9ecce;--one-bg:#11514b;--one-fg:#c4f1ec;--code-bg:#0a0f16}}
+:root[data-theme="dark"]{--bg:#0e141c;--card:#161e29;--fg:#e6ebf2;--mut:#98a3b5;--line:#2a3544;--acc:#2dd4bf;--accfg:#06302c;--cat-bg:#2b3070;--cat-fg:#d4d7fb;--num-bg:#5a3a0c;--num-fg:#fbe2b4;--red-bg:#6b1f1f;--red-fg:#fbd0d0;--grn-bg:#1f4a29;--grn-fg:#c9ecce;--one-bg:#11514b;--one-fg:#c4f1ec;--code-bg:#0a0f16}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:940px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:28px;font-weight:500;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:18px;font-weight:500;margin:0 0 10px}
+.lead{color:var(--mut);margin:0 0 24px;max-width:62ch}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.hint{color:var(--mut);font-size:14px;margin:0 0 10px}
+textarea{width:100%;min-height:150px;font:13px/1.5 "IBM Plex Mono",ui-monospace,Menlo,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical}
+select,input[type=text],button{font:inherit;font-size:14px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+button{cursor:pointer}
+button:hover{border-color:var(--mut)}
+button.pri{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:500}
+button.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.scroll{overflow-x:auto}
+table{border-collapse:separate;border-spacing:3px;font-size:13px}
+th,td{padding:6px 10px;border-radius:6px;text-align:center;white-space:nowrap;font-weight:400}
+th{font-weight:500}
+.set td{text-align:left;padding:5px 6px}
+.set input{width:90px}
+.cat{background:var(--cat-bg);color:var(--cat-fg)}
+.num{background:var(--num-bg);color:var(--num-fg)}
+.nan{background:var(--red-bg);color:var(--red-fg)}
+.fill{background:var(--grn-bg);color:var(--grn-fg)}
+.one{background:var(--one-bg);color:var(--one-fg);font-weight:500}
+.zero,.idx{color:var(--mut)}
+.drop{background:var(--bg);color:var(--mut);text-decoration:line-through}
+pre{margin:0;background:var(--code-bg);color:var(--code-fg);border-radius:8px;padding:14px;overflow-x:auto;font:13px/1.55 "IBM Plex Mono",ui-monospace,Menlo,monospace}
+#msg{color:var(--red-fg);font-size:14px;min-height:20px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12px}
+.legend span{padding:2px 8px;border-radius:6px}
+.flow{display:flex;gap:10px;align-items:stretch;min-width:640px}
+.fbox,.step{transition:box-shadow .3s,border-color .3s}
+.fbox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);min-width:0}
+.fin{flex:0 0 150px}.fct{flex:1;border-style:dashed}.fout{flex:0 0 170px}
+.ar{align-self:center;color:var(--mut);font-size:18px}
+.ar::before{content:"\2192"}
+.flab{font-size:12px;color:var(--mut);margin-bottom:6px}
+.fchip{display:inline-block;padding:3px 8px;border-radius:6px;font-size:12px;margin:2px 3px 2px 0}
+.lane2{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--card)}
+.steps{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-top:6px}
+.step{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;background:var(--bg);max-width:100%}
+.step b{font-weight:500;font-size:13px;display:block}
+.step small{display:block;color:var(--mut);font-size:12px;line-height:1.4;word-break:break-word}
+.hot{border-color:var(--acc)!important;box-shadow:0 0 0 2px var(--acc)}
+</style></head>
+<body><div class="wrap">
+<h1>Pipeline playground</h1>
+<p class="lead">Paste your own CSV, choose how each column is imputed and encoded, and watch the data change at every step. The matching scikit-learn code is written for you. Nothing leaves your browser.</p>
+
+<section>
+<h2>Your data</h2>
+<p class="hint">Paste CSV text, open a file, or drag a file onto the box. The first row must be column names. Empty cells, NA, NaN, null, and ? count as missing.</p>
+<textarea id="csv" spellcheck="false" aria-label="CSV data"></textarea>
+<div class="row">
+<input type="file" id="file" accept=".csv,.tsv,.txt" aria-label="Open a CSV file">
+<button id="sample">Load sample</button>
+<label for="tgt" style="font-size:14px;color:var(--mut)">Target column</label>
+<select id="tgt"></select>
+</div>
+<div id="msg" role="status"></div>
+</section>
+
+<section>
+<h2>Column settings</h2>
+<p class="hint">Types are detected for you. Change any dropdown and the preview and code update.</p>
+<div class="scroll"><table class="set" id="set"></table></div>
+</section>
+
+<section>
+<h2>How the data flows</h2>
+<p class="hint">This diagram rebuilds live as you type or change any setting. Press Play to step through each stage, or use Back and Next.</p>
+<div class="row" style="margin:0 0 10px"><button id="fplay" class="pri">Play</button><button id="fprev">Back</button><button id="fnext">Next</button><span id="fcap" style="font-size:14px"></span></div>
+<div class="scroll"><div class="flow" id="flow"></div></div>
+</section>
+
+<section>
+<h2>What the pipeline does</h2>
+<div class="row" style="margin:0 0 10px" id="pills"></div>
+<div class="scroll" id="tbl"></div>
+<div class="row"><span id="shape" style="font-size:14px;color:var(--mut)"></span></div>
+<div class="legend"><span class="cat">categorical column</span><span class="num">numeric column</span><span class="nan">missing</span><span class="fill">filled by SimpleImputer</span><span class="one">one-hot 1</span></div>
+</section>
+
+<section>
+<h2>Python code</h2>
+<div class="row" style="margin:0 0 10px"><button id="copy" class="pri">Copy code</button><span id="cmsg" style="font-size:14px;color:var(--mut)"></span></div>
+<pre id="code"></pre>
+</section>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)};
+var MISS=/^(|na|nan|null|none|\?|n\/a)$/i;
+var SAMPLE="Make,Colour,Odometer,Doors,Price\nHonda,White,35431,4,15323\nToyota,Blue,,5,19943\n,Red,84714,,28343\nBMW,,154365,3,13434\nHonda,Blue,181577,4,14043\nToyota,White,13721,4,32042\nBMW,Green,,5,21800\nNissan,Blue,115000,4,6500\nHonda,Red,62000,,9800\nToyota,,48000,4,12500";
+var rows=[],cols=[],target="",stage=0;
+var NAMES=["1 Raw data","2 After SimpleImputer","3 After encoding"];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function fmt(n){return typeof n==="number"?(Number.isInteger(n)?n:+n.toFixed(3)):n}
+function parse(t){
+  var l=t.split("\n")[0],d=",";
+  if(l.indexOf("\t")>-1&&l.indexOf(",")<0)d="\t";else if(l.indexOf(";")>-1&&l.indexOf(",")<0)d=";";
+  var out=[],r=[],c="",q=false;
+  for(var i=0;i<t.length;i++){var ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===d){r.push(c);c=""}
+    else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;r.push(c);c="";out.push(r);r=[]}
+    else c+=ch}
+  if(c!==""||r.length){r.push(c);out.push(r)}
+  return out.filter(function(x){return x.join("").trim()!==""})}
+function mk(n,t,j){return t==="num"?{name:n,j:j,type:"num",imp:"mean",fill:"0",enc:"passthrough"}:{name:n,j:j,type:"cat",imp:"constant",fill:"missing",enc:"onehot"}}
+function nv(x){var n=Number(String(x).replace(/,/g,""));return x!==null&&isFinite(n)?n:null}
+function load(){
+  var p=parse($("csv").value);
+  if(p.length<2){$("msg").textContent="Add a header row and at least one data row.";cols=[];rows=[];draw();return}
+  $("msg").textContent="";
+  var h=p[0].map(function(x,i){return x.trim()||"col"+i});
+  rows=p.slice(1,5001).map(function(r){return h.map(function(_,i){var v=(r[i]||"").trim();return MISS.test(v)?null:v})});
+  var old={};cols.forEach(function(c){old[c.name]=c});
+  cols=h.map(function(n,j){
+    var v=rows.map(function(r){return r[j]}).filter(function(x){return x!==null});
+    var num=v.length>0&&v.every(function(x){return nv(x)!==null});
+    var o=old[n];
+    if(o&&o.type===(num?"num":"cat")){o.j=j;return o}
+    var m=mk(n,num?"num":"cat",j);if(!num&&/date|time/i.test(n))m.enc="drop";return m});
+  if(h.indexOf(target)<0)target="";
+  draw()}
+function feats(){return cols.filter(function(c){return c.name!==target})}
+function used(){return feats().filter(function(c){return c.enc!=="drop"})}
+function modeOf(a,cmp){var s=a.slice().sort(cmp),b,bc=0,i=0;while(i<s.length){var k=i;while(k<s.length&&s[k]===s[i])k++;if(k-i>bc){bc=k-i;b=s[i]}i=k}return b===undefined?0:b}
+function stat(c){
+  var raw=rows.map(function(r){return r[c.j]}),f,vals,miss;
+  if(c.type==="num"){
+    var n=raw.map(nv),v=n.filter(function(x){return x!==null});
+    if(c.imp==="mean")f=v.reduce(function(a,b){return a+b},0)/(v.length||1);
+    else if(c.imp==="median"){v.sort(function(a,b){return a-b});var m=v.length>>1;f=!v.length?0:v.length%2?v[m]:(v[m-1]+v[m])/2}
+    else if(c.imp==="most_frequent")f=modeOf(v,function(a,b){return a-b});
+    else f=Number(c.fill)||0;
+    vals=n.map(function(x){return x===null?f:x});miss=n.map(function(x){return x===null});
+  }else{
+    var w=raw.filter(function(x){return x!==null});
+    f=c.imp==="most_frequent"?modeOf(w,function(a,b){return a<b?-1:a>b?1:0}):c.fill;
+    vals=raw.map(function(x){return x===null?f:x});miss=raw.map(function(x){return x===null})}
+  return{f:f,vals:vals,miss:miss}}
+function stageCols(){
+  var out=[];
+  if(stage===0){
+    feats().forEach(function(c){
+      var v=rows.map(function(r){var x=r[c.j];return x===null?{t:"NaN",k:"nan"}:{t:x,k:c.enc==="drop"?"drop":""}});
+      out.push({h:esc(c.name)+(c.enc==="drop"?" (dropped)":""),k:c.type,v:v})});
+  }else{
+    used().forEach(function(c){
+      var s=stat(c);
+      if(stage===1){out.push({h:esc(c.name),k:c.type,v:s.vals.map(function(x,i){return{t:fmt(x),k:s.miss[i]?"fill":""}})});return}
+      if(c.type==="num"){
+        if(c.enc==="standard_scale"){
+          var mu=s.vals.reduce(function(a,b){return a+b},0)/(s.vals.length||1);
+          var sd=Math.sqrt(s.vals.reduce(function(a,b){return a+(b-mu)*(b-mu)},0)/(s.vals.length||1))||1;
+          out.push({h:esc(c.name)+"<br>scaled",k:"num",v:s.vals.map(function(x){return{t:fmt((x-mu)/sd),k:""}})})
+        }else out.push({h:esc(c.name),k:"num",v:s.vals.map(function(x){return{t:fmt(x),k:""}})})
+      }else{
+        var cats=[];s.vals.forEach(function(x){if(cats.indexOf(x)<0)cats.push(x)});cats.sort();
+        cats.forEach(function(ct){out.push({h:esc(c.name)+"<br>"+esc(ct),k:"cat",v:s.vals.map(function(x){return x===ct?{t:1,k:"one"}:{t:0,k:"zero"}})})})}})}
+  return out}
+function table(){
+  var sc=stageCols();
+  if(!sc.length)return'<p class="hint">Nothing to show yet. Add data above, and keep at least one column that is not dropped.</p>';
+  var n=Math.min(8,rows.length),h='<table><tr><th></th>';
+  sc.forEach(function(c){h+='<th class="'+c.k+'">'+c.h+'</th>'});
+  h+='</tr>';
+  for(var i=0;i<n;i++){h+='<tr><td class="idx">'+i+'</td>';sc.forEach(function(c){h+='<td class="'+c.v[i].k+'">'+esc(c.v[i].t)+'</td>'});h+='</tr>'}
+  $("shape").textContent="Shape: ("+rows.length+" rows, "+sc.length+" columns)"+(rows.length>n?". Showing the first "+n+" rows.":".");
+  return h+'</table>'}
+function opts(list,cur){return list.map(function(o){return'<option value="'+o[0]+'"'+(o[0]===cur?" selected":"")+'>'+o[1]+'</option>'}).join("")}
+function settings(){
+  var h='<tr><th>Column</th><th>Type</th><th>Missing</th><th>SimpleImputer</th><th>Encoding</th></tr>';
+  cols.forEach(function(c,i){
+    if(c.name===target){h+='<tr><td>'+esc(c.name)+'</td><td colspan="4" style="color:var(--mut)">Target column. Not part of the pipeline.</td></tr>';return}
+    var m=rows.filter(function(r){return r[c.j]===null}).length;
+    var imps=c.type==="num"?[["mean","mean"],["median","median"],["most_frequent","most frequent"],["constant","constant"]]:[["most_frequent","most frequent"],["constant","constant"]];
+    var encs=c.type==="num"?[["passthrough","keep as is"],["standard_scale","StandardScaler"],["drop","drop column"]]:[["onehot","OneHotEncoder"],["drop","drop column"]];
+    h+='<tr><td>'+esc(c.name)+'</td><td><select data-j="'+i+'" data-f="type">'+opts([["num","numeric"],["cat","categorical"]],c.type)+'</select></td><td>'+m+'</td><td><select data-j="'+i+'" data-f="imp">'+opts(imps,c.imp)+'</select>'+(c.imp==="constant"?' <input type="text" data-j="'+i+'" data-f="fill" value="'+esc(c.fill)+'" aria-label="Fill value for '+esc(c.name)+'">':'')+'</td><td><select data-j="'+i+'" data-f="enc">'+opts(encs,c.enc)+'</select></td></tr>'});
+  return h}
+function code(){
+  var u=used();
+  if(!u.length)return"# Keep at least one column to generate code.";
+  var g={},order=[];
+  u.forEach(function(c){var k=[c.type,c.imp,c.imp==="constant"?c.fill:"",c.enc].join("|");if(!g[k]){g[k]={c:c,cols:[]};order.push(k)}g[k].cols.push(c.name)});
+  var oh=u.some(function(c){return c.enc==="onehot"}),ss=u.some(function(c){return c.enc==="standard_scale"});
+  var L=["import pandas as pd","from sklearn.compose import ColumnTransformer","from sklearn.pipeline import Pipeline","from sklearn.impute import SimpleImputer"];
+  var pre=[];if(oh)pre.push("OneHotEncoder");if(ss)pre.push("StandardScaler");
+  if(pre.length)L.push("from sklearn.preprocessing import "+pre.join(", "));
+  L.push("");
+  var tr=[];
+  order.forEach(function(k,i){
+    var c=g[k].c,nm=c.type+"_"+c.imp+"_"+(c.enc==="passthrough"?"raw":c.enc)+"_"+(i+1);
+    var imp=c.imp==="constant"?'SimpleImputer(strategy="constant", fill_value='+(c.type==="num"?(Number(c.fill)||0):JSON.stringify(c.fill))+')':'SimpleImputer(strategy="'+c.imp+'")';
+    L.push(nm+"_pipe = Pipeline([");
+    L.push('    ("imputer", '+imp+'),');
+    if(c.enc==="onehot")L.push('    ("onehot", OneHotEncoder(handle_unknown="ignore")),');
+    if(c.enc==="standard_scale")L.push('    ("scaler", StandardScaler()),');
+    L.push("])");L.push("");
+    tr.push('    ("'+nm+'", '+nm+'_pipe, '+JSON.stringify(g[k].cols)+'),')});
+  L.push("preprocessor = ColumnTransformer([");
+  tr.forEach(function(t){L.push(t)});
+  L.push("])");
+  if(target){
+    var tc=cols.filter(function(c){return c.name===target})[0];
+    var M=tc&&tc.type==="num"?"RandomForestRegressor":"RandomForestClassifier";
+    L.push("");
+    L.push("from sklearn.model_selection import train_test_split");
+    L.push("from sklearn.ensemble import "+M);
+    L.push("");
+    L.push('df = pd.read_csv("your_file.csv")');
+    L.push("X = df.drop("+JSON.stringify(target)+", axis=1)");
+    L.push("y = df["+JSON.stringify(target)+"]");
+    L.push("X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)");
+    L.push("");
+    L.push("model = Pipeline([");
+    L.push('    ("preprocessor", preprocessor),');
+    L.push('    ("model", '+M+'()),');
+    L.push("])");
+    L.push("model.fit(X_train, y_train)");
+    L.push("print(model.score(X_test, y_test))")}
+  return L.join("\n")}
+function draw(){
+  var t='<option value="">None</option>';
+  cols.forEach(function(c){t+='<option value="'+esc(c.name)+'"'+(c.name===target?" selected":"")+'>'+esc(c.name)+'</option>'});
+  $("tgt").innerHTML=t;
+  $("set").innerHTML=settings();
+  var p="";NAMES.forEach(function(n,i){p+='<button data-s="'+i+'"'+(i===stage?' class="on"':'')+'>'+n+'</button>'});
+  $("pills").innerHTML=p;
+  $("tbl").innerHTML=cols.length?table():'<p class="hint">Add data above to see the preview.</p>';
+  if(!cols.length)$("shape").textContent="";
+  $("code").textContent=cols.length?code():"# Add data above to generate code.";flow()}
+var fstep=0,ftimer=null;
+var FCAP=["Input: your table goes in as is, gaps included.","ColumnTransformer splits the columns and sends each group to its own Pipeline.","SimpleImputer learns a fill value from each column and fills the gaps.","OneHotEncoder and StandardScaler learn categories or statistics, then transform.","ColumnTransformer joins every pipeline output side by side into one number matrix."];
+function groups(){var g={},o=[];used().forEach(function(c){var k=[c.type,c.imp,c.imp==="constant"?c.fill:"",c.enc].join("|");if(!g[k]){g[k]={c:c,cols:[]};o.push(k)}g[k].cols.push(c)});return o.map(function(k){return g[k]})}
+function cats(c){var a=[];stat(c).vals.forEach(function(x){if(a.indexOf(x)<0)a.push(x)});return a.sort()}
+function flow(){
+  if(!cols.length){$("flow").innerHTML="";$("fcap").textContent="";return}
+  var H=function(n){return fstep===n?" hot":""};
+  var h='<div class="fbox fin'+H(0)+'"><div class="flab">Input table</div>';
+  feats().forEach(function(c){var m=rows.filter(function(r){return r[c.j]===null}).length;h+='<span class="fchip '+(c.enc==="drop"?"drop":c.type)+'">'+esc(c.name)+(m?' ('+m+' missing)':'')+'</span>'});
+  if(target)h+='<div class="flab" style="margin-top:6px">Target kept aside: '+esc(target)+'</div>';
+  h+='</div><span class="ar"></span><div class="fbox fct'+H(1)+'"><div class="flab">ColumnTransformer</div>';
+  var K=0,on=[];
+  groups().forEach(function(g){
+    var c=g.c;
+    h+='<div class="lane2"><div class="flab">Pipeline for</div>';
+    g.cols.forEach(function(x){h+='<span class="fchip '+x.type+'">'+esc(x.name)+'</span>'});
+    var li=g.cols.map(function(x){var s=stat(x);return esc(x.name)+': fill '+esc(fmt(s.f))+' ('+s.miss.filter(Boolean).length+' filled)'}).join("<br>");
+    h+='<div class="steps"><div class="step'+H(2)+'"><b>SimpleImputer</b><small>strategy = '+c.imp+(c.imp==="constant"?', '+esc(c.fill):'')+'<br>'+li+'</small></div>';
+    if(c.enc==="onehot"){
+      var l2=g.cols.map(function(x){var a=cats(x);K+=a.length;a.forEach(function(v){on.push(x.name+"_"+v)});return esc(x.name)+': '+a.length+' categories ('+esc(a.slice(0,5).join(", "))+(a.length>5?', ...':'')+')'}).join("<br>");
+      h+='<span class="ar"></span><div class="step'+H(3)+'"><b>OneHotEncoder</b><small>'+l2+'</small></div>';
+    }else if(c.enc==="standard_scale"){
+      var l3=g.cols.map(function(x){var v=stat(x).vals,n=v.length||1,mu=v.reduce(function(a,b){return a+b},0)/n,sd=Math.sqrt(v.reduce(function(a,b){return a+(b-mu)*(b-mu)},0)/n);K++;on.push(x.name);return esc(x.name)+': mean '+fmt(+mu.toFixed(2))+', std '+fmt(+sd.toFixed(2))}).join("<br>");
+      h+='<span class="ar"></span><div class="step'+H(3)+'"><b>StandardScaler</b><small>'+l3+'</small></div>';
+    }else{
+      g.cols.forEach(function(x){K++;on.push(x.name)});
+      h+='<span class="ar"></span><div class="step'+H(3)+'"><b>passthrough</b><small>values go on unchanged</small></div>';
+    }
+    h+='</div></div>'});
+  h+='</div><span class="ar"></span><div class="fbox fout'+H(4)+'"><div class="flab">Output matrix</div><div style="font-size:15px;font-weight:500">('+rows.length+', '+K+')</div><div class="flab" style="margin-top:6px">'+esc(on.slice(0,8).join(", "))+(on.length>8?', ...':'')+'</div></div>';
+  $("flow").innerHTML=h;
+  $("fcap").textContent=FCAP[fstep];
+  $("fplay").textContent=ftimer?"Pause":"Play"}
+function fgo(n){fstep=(n+5)%5;flow()}
+$("fplay").onclick=function(){if(ftimer){clearInterval(ftimer);ftimer=null}else{ftimer=setInterval(function(){fgo(fstep+1)},1600)}flow()};
+$("fprev").onclick=function(){fgo(fstep-1)};
+$("fnext").onclick=function(){fgo(fstep+1)};
+$("csv").ondragover=function(e){e.preventDefault()};
+$("csv").ondrop=function(e){e.preventDefault();var f=e.dataTransfer.files[0];if(!f)return;var r=new FileReader();r.onload=function(){$("csv").value=String(r.result);target="";cols=[];load()};r.readAsText(f)};
+$("csv").oninput=load;
+$("sample").onclick=function(){$("csv").value=SAMPLE;target="Price";cols=[];load()};
+$("file").onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){$("csv").value=String(r.result);target="";cols=[];load()};r.readAsText(f)};
+$("tgt").onchange=function(e){target=e.target.value;draw()};
+$("set").onchange=function(e){var t=e.target,i=+t.dataset.j;if(isNaN(i))return;var f=t.dataset.f;if(f==="type")cols[i]=mk(cols[i].name,t.value,cols[i].j);else cols[i][f]=t.value;draw()};
+$("pills").onclick=function(e){var s=e.target.dataset.s;if(s===undefined)return;stage=+s;draw()};
+$("copy").onclick=function(){
+  var txt=$("code").textContent,done=function(m){$("cmsg").textContent=m;setTimeout(function(){$("cmsg").textContent=""},2000)};
+  try{navigator.clipboard.writeText(txt).then(function(){done("Copied")},function(){sel()})}catch(x){sel()}
+  function sel(){var r=document.createRange();r.selectNodeContents($("code"));var s=window.getSelection();s.removeAllRanges();s.addRange(r);done("Selected. Press Ctrl+C to copy")}};
+$("csv").value=SAMPLE;target="Price";load();
+if(!matchMedia("(prefers-reduced-motion: reduce)").matches)$("fplay").click();
+</script></body></html>
